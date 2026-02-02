@@ -4,7 +4,7 @@ Este repositorio contiene una práctica completa para aprender Kubernetes desde 
 
 ---
 
-Actua como experto en Sistemas distribuidos. Especialmente en kubernetes con minikube. Crea esta practica en la carpeta que tengo en tu entorno scratch. no quiero que me muestres plan de implementacion y pidas aprobacion, quiero que directamente hagas la practica. Ten en cuenta que debe de inicialmente funcionar con docker compose y luego transformar a kubernetes con el Kompose.
+Actua como experto en Sistemas distribuidos. Especialmente en kubernetes con minikube. Crea esta practica en la carpeta que tengo en tu entorno scratch. no quiero que me muestres plan de implementacion y pidas aprobacion, quiero que directamente hagas la practica. Ten en cuenta que debe de inicialmente funcionar con docker compose y luego transformar a kubernetes con el Kompose. Tiene que ser muy sencillo, poco codigo solo lo necesario, no pongas nada inservible solo por adornar, ten en cuenta que voy a tener que sustentar asi que debe ser muy sencillo. Tambien debes crear un readmi explicando que hace cada cosa de la practica y tambien debe estar todos los comandos que voy a necesitar para correr la transformacion a kubernetes, teniendo en cuenta que los archivos .yaml deberian crearse en una carpeta llamada k8s.
 
 ## 📋 Tabla de Contenidos
 
