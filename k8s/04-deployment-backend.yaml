@@ -1,0 +1,141 @@
+# ====================================================
+# DEPLOYMENT - Backend API
+# ====================================================
+# Un Deployment gestiona un conjunto de Pods replicados:
+# - Crea y mantiene el número deseado de réplicas
+# - Realiza actualizaciones controladas (rolling updates)
+# - Permite rollbacks a versiones anteriores
+# - Autorecupera pods fallidos
+#
+# Componentes principales:
+# - spec.replicas: Número de pods a mantener
+# - spec.selector: Cómo identificar los pods que gestiona
+# - spec.template: Plantilla para crear los pods
+# ====================================================
+
+apiVersion: apps/v1       # API group para Deployments
+kind: Deployment
+metadata:
+  name: backend-deployment
+  namespace: prackube
+  labels:
+    app: backend
+    tier: api
+spec:
+  # ========== RÉPLICAS ==========
+  replicas: 2             # Número de pods a crear/mantener
+                          # Kubernetes siempre intentará tener este número corriendo
+  
+  # ========== SELECTOR ==========
+  # Define qué pods pertenecen a este Deployment
+  selector:
+    matchLabels:          # Los pods deben tener TODAS estas etiquetas
+      app: backend
+  
+  # ========== ESTRATEGIA DE ACTUALIZACIÓN ==========
+  strategy:
+    type: RollingUpdate   # Actualizar gradualmente (sin downtime)
+    rollingUpdate:
+      maxSurge: 1         # Máximo pods extra durante actualización
+      maxUnavailable: 0   # Mínimo pods disponibles durante actualización
+  
+  # ========== PLANTILLA DEL POD ==========
+  template:
+    metadata:
+      labels:             # Estas etiquetas deben coincidir con selector
+        app: backend
+        tier: api
+    spec:
+      # -------- CONTENEDORES --------
+      containers:
+        - name: backend
+          # Imagen del contenedor (construida localmente para Minikube)
+          image: prackube-backend:latest
+          # imagePullPolicy: Never = usar imagen local (importante para Minikube)
+          imagePullPolicy: Never
+          
+          # -------- PUERTOS --------
+          ports:
+            - containerPort: 5000   # Puerto que expone el contenedor
+              protocol: TCP
+              name: http
+          
+          # -------- VARIABLES DE ENTORNO --------
+          env:
+            # Valor directo
+            - name: PORT
+              value: "5000"
+            
+            # Desde ConfigMap (referencia a clave específica)
+            - name: APP_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config    # Nombre del ConfigMap
+                  key: APP_NAME           # Clave dentro del ConfigMap
+            
+            - name: ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: ENVIRONMENT
+            
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: DB_HOST
+            
+            # Desde Secret
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secrets   # Nombre del Secret
+                  key: SECRET_KEY         # Clave dentro del Secret
+          
+          # También puedes cargar TODAS las variables de un ConfigMap/Secret
+          # envFrom:
+          #   - configMapRef:
+          #       name: backend-config
+          #   - secretRef:
+          #       name: backend-secrets
+          
+          # -------- RECURSOS (CPU/Memoria) --------
+          # Importante para scheduling y límites
+          resources:
+            requests:             # Mínimo garantizado
+              memory: "64Mi"      # 64 Megabytes
+              cpu: "100m"         # 100 milicores (0.1 CPU)
+            limits:               # Máximo permitido
+              memory: "256Mi"     # 256 Megabytes
+              cpu: "500m"         # 500 milicores (0.5 CPU)
+          
+          # -------- HEALTH CHECKS --------
+          # livenessProbe: ¿El contenedor está vivo?
+          # Si falla, Kubernetes reinicia el contenedor
+          livenessProbe:
+            httpGet:
+              path: /health       # Endpoint a verificar
+              port: 5000          # Puerto del contenedor
+            initialDelaySeconds: 10   # Esperar antes del primer check
+            periodSeconds: 15         # Frecuencia de checks
+            timeoutSeconds: 5         # Timeout por check
+            failureThreshold: 3       # Fallos antes de reiniciar
+          
+          # readinessProbe: ¿El contenedor está listo para recibir tráfico?
+          # Si falla, el pod se remueve del Service (no recibe tráfico)
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            successThreshold: 1       # Éxitos para marcar como ready
+            failureThreshold: 3
+      
+      # -------- CONFIGURACIÓN ADICIONAL DEL POD --------
+      # Tiempo para terminar gracefully antes de forzar kill
+      terminationGracePeriodSeconds: 30
+      
+      # Política de reinicio (Always es default para Deployments)
+      restartPolicy: Always

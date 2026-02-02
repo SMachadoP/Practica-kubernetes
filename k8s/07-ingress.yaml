@@ -1,0 +1,88 @@
+# ====================================================
+# INGRESS - Enrutamiento HTTP/HTTPS
+# ====================================================
+# Un Ingress gestiona el acceso externo a servicios del cluster
+# generalmente HTTP/HTTPS.
+#
+# Funcionalidades:
+# - Enrutamiento basado en host (dominio)
+# - Enrutamiento basado en path (ruta URL)
+# - Terminación TLS/SSL
+# - Balanceo de carga
+# - Name-based virtual hosting
+#
+# IMPORTANTE: Requiere un Ingress Controller instalado
+# En Minikube: minikube addons enable ingress
+# ====================================================
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prackube-ingress
+  namespace: prackube
+  labels:
+    app: prackube
+  annotations:
+    # Anotaciones específicas del Ingress Controller (nginx)
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  # Clase del Ingress Controller a usar
+  ingressClassName: nginx
+  
+  rules:
+    # Regla para el dominio prackube.local
+    # Debes agregar a tu archivo hosts: <minikube-ip> prackube.local
+    - host: prackube.local
+      http:
+        paths:
+          # Todo el tráfico va al frontend
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: 80
+    
+    # También puedes acceder sin host (cualquier dominio)
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: 80
+
+---
+# ====================================================
+# INGRESS con múltiples rutas (ejemplo adicional)
+# ====================================================
+# Este ejemplo muestra cómo enrutar diferentes paths
+# a diferentes servicios
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prackube-ingress-paths
+  namespace: prackube
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # Para /api, NO reescribir el path (el backend espera /api/*)
+    # nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: api.prackube.local
+      http:
+        paths:
+          # Acceso directo al backend API
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 5000

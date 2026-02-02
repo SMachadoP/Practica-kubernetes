@@ -1,0 +1,20 @@
+# ====================================================
+# NAMESPACE - Espacio de nombres aislado
+# ====================================================
+# Un Namespace es como una "carpeta virtual" dentro del cluster
+# que permite organizar y aislar recursos
+#
+# Beneficios:
+# - Aislamiento lógico de recursos
+# - Permite tener múltiples ambientes (dev, staging, prod) en el mismo cluster
+# - Facilita la gestión de permisos (RBAC)
+# - Permite establecer cuotas de recursos por namespace
+# ====================================================
+
+apiVersion: v1          # Versión del API de Kubernetes
+kind: Namespace         # Tipo de recurso
+metadata:
+  name: prackube        # Nombre del namespace
+  labels:               # Etiquetas para organización y selección
+    app: prackube
+    environment: development

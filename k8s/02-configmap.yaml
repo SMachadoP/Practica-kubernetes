@@ -1,0 +1,45 @@
+# ====================================================
+# CONFIGMAP - Configuración externa de la aplicación
+# ====================================================
+# Un ConfigMap almacena datos de configuración en pares clave-valor
+# que pueden ser consumidos por los pods como:
+# - Variables de entorno
+# - Argumentos de línea de comandos
+# - Archivos de configuración montados en volúmenes
+#
+# Beneficios:
+# - Separación de configuración del código
+# - Facilita cambios sin reconstruir imágenes
+# - Permite diferentes configs por ambiente
+#
+# IMPORTANTE: No usar para datos sensibles (usar Secrets)
+# ====================================================
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config          # Nombre del ConfigMap
+  namespace: prackube           # Namespace donde se crea
+  labels:
+    app: backend
+    component: config
+data:
+  # Cada entrada es una variable de configuración
+  # Formato: NOMBRE_VARIABLE: "valor"
+  
+  APP_NAME: "Mi App Kubernetes - Práctica"
+  ENVIRONMENT: "development"
+  DB_HOST: "postgres-service"    # Nombre del servicio de DB (si tuviéramos uno)
+  PORT: "5000"
+  FLASK_DEBUG: "false"
+  
+  # También puedes incluir archivos completos de configuración
+  # Ejemplo de archivo de configuración:
+  app-config.json: |
+    {
+      "version": "1.0.0",
+      "features": {
+        "logging": true,
+        "metrics": true
+      }
+    }

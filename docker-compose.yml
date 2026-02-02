@@ -1,0 +1,89 @@
+# ====================================================
+# Docker Compose - Definición de servicios
+# ====================================================
+# Este archivo puede convertirse a Kubernetes usando Kompose:
+#   kompose convert
+#
+# O ejecutarse directamente con Docker:
+#   docker-compose up -d
+# ====================================================
+
+version: '3.8'
+
+services:
+  # ============ BACKEND API ============
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: prackube-backend:latest
+    container_name: prackube-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - APP_NAME=Mi App Kubernetes - Práctica
+      - ENVIRONMENT=development
+      - DB_HOST=postgres
+      - SECRET_KEY=mi-super-secreto-123
+      - PORT=5000
+      - FLASK_DEBUG=false
+    # Labels que Kompose usa para generar Kubernetes
+    labels:
+      kompose.service.type: ClusterIP
+      kompose.image-pull-policy: Never
+    # Health check (Kompose lo convierte a liveness/readiness probes)
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:5000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    # Recursos (Kompose los convierte a requests/limits)
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    networks:
+      - prackube-network
+
+  # ============ FRONTEND (Nginx) ============
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: prackube-frontend:latest
+    container_name: prackube-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    labels:
+      kompose.service.type: NodePort
+      kompose.service.nodeport.port: "30080"
+      kompose.image-pull-policy: Never
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/nginx-health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 32M
+    networks:
+      - prackube-network
+
+networks:
+  prackube-network:
+    driver: bridge

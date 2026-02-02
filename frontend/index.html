@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Práctica Kubernetes - Frontend</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #326ce5 0%, #1a3a6e 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            opacity: 0.9;
+        }
+
+        .logo {
+            width: 80px;
+            margin-bottom: 15px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h2 {
+            color: #326ce5;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-icon {
+            font-size: 1.5em;
+        }
+
+        .info-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background: #f5f7fa;
+            border-radius: 5px;
+        }
+
+        .info-item .label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .info-item .value {
+            color: #326ce5;
+            font-family: monospace;
+        }
+
+        button {
+            background: #326ce5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #1a3a6e;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .status {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .status.healthy {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.unhealthy {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status.loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        /* Tareas */
+        .tareas-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .tarea-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            background: #f5f7fa;
+            border-radius: 5px;
+        }
+
+        .tarea-item.completada {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+
+        .tarea-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 1em;
+            margin-bottom: 10px;
+        }
+
+        .tarea-input:focus {
+            outline: none;
+            border-color: #326ce5;
+        }
+
+        /* Logs */
+        .log-container {
+            background: #1e1e1e;
+            color: #00ff00;
+            font-family: monospace;
+            padding: 15px;
+            border-radius: 5px;
+            height: 200px;
+            overflow-y: auto;
+            font-size: 0.9em;
+        }
+
+        .log-entry {
+            margin: 5px 0;
+        }
+
+        .log-entry.error {
+            color: #ff6b6b;
+        }
+
+        .log-entry.success {
+            color: #51cf66;
+        }
+
+        .log-entry.info {
+            color: #74c0fc;
+        }
+
+        footer {
+            text-align: center;
+            color: white;
+            padding: 20px;
+            opacity: 0.8;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8em;
+            }
+            .cards {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <!-- Logo de Kubernetes -->
+            <svg class="logo" viewBox="0 0 722 702" fill="white">
+                <path d="M358.9 702c-9.7 0-19.5-2.4-28.3-7.2L43.2 525.5c-17.6-9.7-28.4-28.1-28.4-48.4V224.8c0-20.3 10.8-38.7 28.4-48.4L330.6 7.1c17.6-9.6 39-9.6 56.6 0l287.4 169.3c17.6 9.7 28.4 28.1 28.4 48.4v252.3c0 20.3-10.8 38.7-28.4 48.4L387.2 694.8c-8.8 4.8-18.6 7.2-28.3 7.2z"/>
+                <path fill="#326ce5" d="M358.9 7.9c7.6 0 15.2 2 22.1 5.8l287.4 169.3c13.7 8.1 22.2 22.5 22.2 38.4v252.3c0 15.9-8.5 30.3-22.2 38.4L380.9 681.4c-6.9 4-14.5 5.9-22.1 5.9-7.6 0-15.2-2-22.1-5.9L49.4 512.1c-13.7-8.1-22.2-22.5-22.2-38.4V221.4c0-15.9 8.5-30.3 22.2-38.4L336.8 13.7c6.9-4 14.5-5.8 22.1-5.8z"/>
+                <path fill="white" d="M358.9 151.8c-7.1 0-12.9 5.8-12.9 12.9v8.6c0 .8-.6 1.5-1.4 1.6-22.4 3.7-42.7 13.5-59 27.7-.6.5-1.5.5-2-.1l-6.1-6.1c-5-5-13.2-5-18.2 0-5 5-5 13.2 0 18.2l6.1 6.1c.6.6.6 1.4.1 2-14.2 16.3-24 36.6-27.7 59-.1.8-.8 1.4-1.6 1.4h-8.6c-7.1 0-12.9 5.8-12.9 12.9 0 7.1 5.8 12.9 12.9 12.9h8.6c.8 0 1.5.6 1.6 1.4 3.7 22.4 13.5 42.7 27.7 59 .5.6.5 1.5-.1 2l-6.1 6.1c-5 5-5 13.2 0 18.2 2.5 2.5 5.8 3.8 9.1 3.8 3.3 0 6.6-1.3 9.1-3.8l6.1-6.1c.6-.6 1.4-.6 2-.1 16.3 14.2 36.6 24 59 27.7.8.1 1.4.8 1.4 1.6v8.6c0 7.1 5.8 12.9 12.9 12.9 7.1 0 12.9-5.8 12.9-12.9v-8.6c0-.8.6-1.5 1.4-1.6 22.4-3.7 42.7-13.5 59-27.7.6-.5 1.5-.5 2 .1l6.1 6.1c2.5 2.5 5.8 3.8 9.1 3.8 3.3 0 6.6-1.3 9.1-3.8 5-5 5-13.2 0-18.2l-6.1-6.1c-.6-.6-.6-1.4-.1-2 14.2-16.3 24-36.6 27.7-59 .1-.8.8-1.4 1.6-1.4h8.6c7.1 0 12.9-5.8 12.9-12.9 0-7.1-5.8-12.9-12.9-12.9h-8.6c-.8 0-1.5-.6-1.6-1.4-3.7-22.4-13.5-42.7-27.7-59-.5-.6-.5-1.5.1-2l6.1-6.1c5-5 5-13.2 0-18.2-5-5-13.2-5-18.2 0l-6.1 6.1c-.6.6-1.4.6-2 .1-16.3-14.2-36.6-24-59-27.7-.8-.1-1.4-.8-1.4-1.6v-8.6c0-7.1-5.8-12.9-12.9-12.9zm0 88.6c51.1 0 92.5 41.4 92.5 92.5s-41.4 92.5-92.5 92.5-92.5-41.4-92.5-92.5 41.4-92.5 92.5-92.5z"/>
+            </svg>
+            <h1>☸️ Práctica Kubernetes</h1>
+            <p>Interfaz de demostración para aprender Kubernetes con Minikube</p>
+        </header>
+
+        <div class="cards">
+            <!-- Card: Estado del Backend -->
+            <div class="card">
+                <h2><span class="card-icon">🔌</span> Estado del Backend</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="label">Estado:</span>
+                        <span id="backend-status" class="status loading">Verificando...</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Pod/Hostname:</span>
+                        <span id="backend-hostname" class="value">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">IP del Pod:</span>
+                        <span id="backend-ip" class="value">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Ambiente:</span>
+                        <span id="backend-env" class="value">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Último Check:</span>
+                        <span id="backend-timestamp" class="value">-</span>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button onclick="checkBackend()">🔄 Verificar Estado</button>
+                    <button onclick="checkHealth()">💚 Health Check</button>
+                    <button onclick="testLoadBalancing()">⚖️ Test Load Balancing</button>
+                </div>
+            </div>
+
+            <!-- Card: Información de Configuración -->
+            <div class="card">
+                <h2><span class="card-icon">⚙️</span> Configuración (ConfigMaps/Secrets)</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="label">App Name:</span>
+                        <span id="config-appname" class="value">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Environment:</span>
+                        <span id="config-environment" class="value">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">DB Host:</span>
+                        <span id="config-dbhost" class="value">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Secret Configurado:</span>
+                        <span id="config-secret" class="value">-</span>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button onclick="getConfig()">📋 Obtener Configuración</button>
+                </div>
+            </div>
+
+            <!-- Card: Gestión de Tareas -->
+            <div class="card">
+                <h2><span class="card-icon">📝</span> Gestión de Tareas (CRUD)</h2>
+                <input type="text" id="nueva-tarea" class="tarea-input" placeholder="Nueva tarea...">
+                <div class="btn-group">
+                    <button onclick="crearTarea()">➕ Crear</button>
+                    <button onclick="obtenerTareas()">📋 Listar</button>
+                </div>
+                <div id="tareas-container" class="tareas-list" style="margin-top: 15px;">
+                    <!-- Las tareas se cargarán aquí -->
+                </div>
+            </div>
+
+            <!-- Card: Test de Estrés -->
+            <div class="card">
+                <h2><span class="card-icon">📈</span> Test de Estrés (HPA)</h2>
+                <p style="margin-bottom: 15px; color: #666;">
+                    Genera carga de CPU para probar el Horizontal Pod Autoscaler.
+                    Observa cómo Kubernetes crea nuevas réplicas automáticamente.
+                </p>
+                <div class="btn-group">
+                    <button onclick="stressTest()">🔥 Ejecutar Test de Estrés</button>
+                    <button onclick="stressTestMultiple(5)">⚡ Múltiples Requests (5)</button>
+                </div>
+            </div>
+
+            <!-- Card: Logs de Actividad -->
+            <div class="card" style="grid-column: span 2;">
+                <h2><span class="card-icon">📜</span> Log de Actividad</h2>
+                <div id="log-container" class="log-container">
+                    <div class="log-entry info">[INFO] Frontend iniciado - Esperando conexión con backend...</div>
+                </div>
+                <div class="btn-group">
+                    <button onclick="clearLogs()">🗑️ Limpiar Logs</button>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Práctica de Kubernetes con Minikube | Frontend servido por Nginx</p>
+            <p>Este frontend demuestra la comunicación con servicios backend en Kubernetes</p>
+        </footer>
+    </div>
+
+    <script>
+        // URL del backend (se puede configurar por variable de entorno en producción)
+        // En Kubernetes, usamos el nombre del servicio
+        const BACKEND_URL = window.BACKEND_URL || '/api';
+
+        // Función para añadir logs
+        function addLog(message, type = 'info') {
+            const logContainer = document.getElementById('log-container');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${timestamp}] ${message}`;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('log-container').innerHTML = '';
+            addLog('Logs limpiados', 'info');
+        }
+
+        // Verificar estado del backend
+        async function checkBackend() {
+            addLog('Verificando estado del backend...', 'info');
+            try {
+                const response = await fetch(`${BACKEND_URL}/`);
+                const data = await response.json();
+                
+                document.getElementById('backend-status').textContent = 'Conectado';
+                document.getElementById('backend-status').className = 'status healthy';
+                document.getElementById('backend-hostname').textContent = data.hostname;
+                document.getElementById('backend-ip').textContent = data.ip;
+                document.getElementById('backend-env').textContent = data.ambiente;
+                document.getElementById('backend-timestamp').textContent = data.timestamp;
+                
+                addLog(`Backend conectado - Pod: ${data.hostname}`, 'success');
+            } catch (error) {
+                document.getElementById('backend-status').textContent = 'Desconectado';
+                document.getElementById('backend-status').className = 'status unhealthy';
+                addLog(`Error conectando al backend: ${error.message}`, 'error');
+            }
+        }
+
+        // Health check
+        async function checkHealth() {
+            addLog('Ejecutando health check...', 'info');
+            try {
+                const response = await fetch(`${BACKEND_URL}/health`);
+                const data = await response.json();
+                addLog(`Health check OK - Status: ${data.status}`, 'success');
+            } catch (error) {
+                addLog(`Health check fallido: ${error.message}`, 'error');
+            }
+        }
+
+        // Test de load balancing (múltiples requests para ver diferentes pods)
+        async function testLoadBalancing() {
+            addLog('Probando balanceo de carga (10 requests)...', 'info');
+            const pods = new Set();
+            
+            for (let i = 0; i < 10; i++) {
+                try {
+                    const response = await fetch(`${BACKEND_URL}/`);
+                    const data = await response.json();
+                    pods.add(data.hostname);
+                    addLog(`Request ${i + 1}: Pod ${data.hostname}`, 'info');
+                } catch (error) {
+                    addLog(`Request ${i + 1} fallido: ${error.message}`, 'error');
+                }
+            }
+            
+            addLog(`Total de pods diferentes respondiendo: ${pods.size}`, 'success');
+            addLog(`Pods: ${Array.from(pods).join(', ')}`, 'info');
+        }
+
+        // Obtener configuración
+        async function getConfig() {
+            addLog('Obteniendo configuración del backend...', 'info');
+            try {
+                const response = await fetch(`${BACKEND_URL}/info`);
+                const data = await response.json();
+                
+                document.getElementById('config-appname').textContent = data.app_name;
+                document.getElementById('config-environment').textContent = data.environment;
+                document.getElementById('config-dbhost').textContent = data.db_host;
+                document.getElementById('config-secret').textContent = data.secret_configured ? '✅ Sí' : '❌ No';
+                
+                addLog('Configuración obtenida correctamente', 'success');
+            } catch (error) {
+                addLog(`Error obteniendo configuración: ${error.message}`, 'error');
+            }
+        }
+
+        // CRUD de Tareas
+        async function obtenerTareas() {
+            addLog('Obteniendo lista de tareas...', 'info');
+            try {
+                const response = await fetch(`${BACKEND_URL}/tareas`);
+                const data = await response.json();
+                
+                const container = document.getElementById('tareas-container');
+                container.innerHTML = '';
+                
+                if (data.tareas.length === 0) {
+                    container.innerHTML = '<p style="color: #666; text-align: center;">No hay tareas</p>';
+                } else {
+                    data.tareas.forEach(tarea => {
+                        const div = document.createElement('div');
+                        div.className = `tarea-item ${tarea.completada ? 'completada' : ''}`;
+                        div.innerHTML = `
+                            <span>${tarea.titulo} (Pod: ${tarea.creada_en_pod})</span>
+                            <div>
+                                <button onclick="toggleTarea(${tarea.id}, ${!tarea.completada})">${tarea.completada ? '↩️' : '✅'}</button>
+                                <button onclick="eliminarTarea(${tarea.id})">🗑️</button>
+                            </div>
+                        `;
+                        container.appendChild(div);
+                    });
+                }
+                
+                addLog(`Se encontraron ${data.total} tareas (Servidor: ${data.servidor})`, 'success');
+            } catch (error) {
+                addLog(`Error obteniendo tareas: ${error.message}`, 'error');
+            }
+        }
+
+        async function crearTarea() {
+            const input = document.getElementById('nueva-tarea');
+            const titulo = input.value.trim();
+            
+            if (!titulo) {
+                addLog('Error: El título de la tarea no puede estar vacío', 'error');
+                return;
+            }
+            
+            addLog(`Creando tarea: "${titulo}"...`, 'info');
+            try {
+                const response = await fetch(`${BACKEND_URL}/tareas`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ titulo })
+                });
+                const data = await response.json();
+                
+                input.value = '';
+                addLog(`Tarea creada en pod: ${data.creada_en_pod}`, 'success');
+                obtenerTareas();
+            } catch (error) {
+                addLog(`Error creando tarea: ${error.message}`, 'error');
+            }
+        }
+
+        async function toggleTarea(id, completada) {
+            try {
+                await fetch(`${BACKEND_URL}/tareas/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ completada })
+                });
+                addLog(`Tarea ${id} actualizada`, 'success');
+                obtenerTareas();
+            } catch (error) {
+                addLog(`Error actualizando tarea: ${error.message}`, 'error');
+            }
+        }
+
+        async function eliminarTarea(id) {
+            try {
+                await fetch(`${BACKEND_URL}/tareas/${id}`, { method: 'DELETE' });
+                addLog(`Tarea ${id} eliminada`, 'success');
+                obtenerTareas();
+            } catch (error) {
+                addLog(`Error eliminando tarea: ${error.message}`, 'error');
+            }
+        }
+
+        // Test de estrés
+        async function stressTest() {
+            addLog('Ejecutando test de estrés (carga de CPU)...', 'info');
+            try {
+                const start = Date.now();
+                const response = await fetch(`${BACKEND_URL}/stress`);
+                const data = await response.json();
+                const elapsed = Date.now() - start;
+                
+                addLog(`Test completado en ${elapsed}ms - Pod: ${data.pod}`, 'success');
+            } catch (error) {
+                addLog(`Error en test de estrés: ${error.message}`, 'error');
+            }
+        }
+
+        async function stressTestMultiple(count) {
+            addLog(`Ejecutando ${count} tests de estrés en paralelo...`, 'info');
+            const promises = [];
+            
+            for (let i = 0; i < count; i++) {
+                promises.push(
+                    fetch(`${BACKEND_URL}/stress`)
+                        .then(r => r.json())
+                        .then(data => addLog(`Test ${i + 1} completado - Pod: ${data.pod}`, 'success'))
+                        .catch(err => addLog(`Test ${i + 1} fallido: ${err.message}`, 'error'))
+                );
+            }
+            
+            await Promise.all(promises);
+            addLog('Todos los tests de estrés completados', 'info');
+        }
+
+        // Enter para crear tarea
+        document.getElementById('nueva-tarea').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') crearTarea();
+        });
+
+        // Verificar backend al cargar
+        window.onload = () => {
+            checkBackend();
+            getConfig();
+        };
+    </script>
+</body>
+</html>

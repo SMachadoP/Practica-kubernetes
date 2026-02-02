@@ -1,0 +1,93 @@
+# ====================================================
+# HORIZONTAL POD AUTOSCALER (HPA)
+# ====================================================
+# El HPA ajusta automáticamente el número de réplicas de un
+# Deployment basándose en métricas observadas (CPU, memoria, custom)
+#
+# Funcionamiento:
+# 1. El HPA monitorea las métricas de los pods
+# 2. Calcula el número deseado de réplicas
+# 3. Escala el Deployment hacia arriba o abajo
+#
+# IMPORTANTE: Requiere el metrics-server instalado
+# En Minikube: minikube addons enable metrics-server
+# ====================================================
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend-hpa
+  namespace: prackube
+  labels:
+    app: backend
+spec:
+  # Referencia al recurso a escalar
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend-deployment
+  
+  # Límites de escalado
+  minReplicas: 2          # Mínimo de pods (siempre al menos 2)
+  maxReplicas: 10         # Máximo de pods (no escalar más de 10)
+  
+  # Métricas para el escalado
+  metrics:
+    # Escalar basado en uso de CPU
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50    # Escalar si CPU > 50%
+    
+    # También puedes escalar por memoria
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 70    # Escalar si memoria > 70%
+  
+  # Comportamiento de escalado (opcional, para control fino)
+  behavior:
+    scaleDown:
+      # Ser conservador al escalar hacia abajo
+      stabilizationWindowSeconds: 300   # Esperar 5 min antes de reducir
+      policies:
+        - type: Percent
+          value: 10                      # Reducir máximo 10% por vez
+          periodSeconds: 60
+    scaleUp:
+      # Ser agresivo al escalar hacia arriba
+      stabilizationWindowSeconds: 0     # Escalar inmediatamente
+      policies:
+        - type: Percent
+          value: 100                     # Duplicar pods si es necesario
+          periodSeconds: 15
+        - type: Pods
+          value: 4                       # Agregar hasta 4 pods
+          periodSeconds: 15
+      selectPolicy: Max                  # Usar la política más agresiva
+
+---
+# HPA simple para el frontend
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: frontend-hpa
+  namespace: prackube
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: frontend-deployment
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60

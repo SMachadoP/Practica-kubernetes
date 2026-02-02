@@ -1,0 +1,92 @@
+# ====================================================
+# NETWORK POLICY - Políticas de Red
+# ====================================================
+# NetworkPolicy controla el tráfico de red a/desde los pods.
+# Por defecto, todo el tráfico está permitido en Kubernetes.
+#
+# Tipos de políticas:
+# - Ingress: Controla tráfico ENTRANTE a los pods
+# - Egress: Controla tráfico SALIENTE de los pods
+#
+# IMPORTANTE: Requiere un CNI que soporte Network Policies
+# (Calico, Cilium, Weave Net, etc.)
+# Minikube con CNI por defecto NO aplica estas políticas
+#
+# Para probar: minikube start --cni=calico
+# ====================================================
+
+# Política que solo permite tráfico al backend desde el frontend
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-network-policy
+  namespace: prackube
+spec:
+  # A qué pods aplica esta política
+  podSelector:
+    matchLabels:
+      app: backend
+  
+  # Tipos de políticas (Ingress, Egress, o ambas)
+  policyTypes:
+    - Ingress
+  
+  # Reglas de Ingress (tráfico entrante)
+  ingress:
+    # Permitir tráfico desde pods con label app=frontend
+    - from:
+        - podSelector:
+            matchLabels:
+              app: frontend
+      ports:
+        - protocol: TCP
+          port: 5000
+
+---
+# ====================================================
+# Network Policy: Denegar todo el tráfico por defecto
+# ====================================================
+# Esta política es una buena práctica de seguridad:
+# Denegar todo y luego permitir explícitamente lo necesario
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: prackube
+spec:
+  podSelector: {}           # Aplica a TODOS los pods del namespace
+  policyTypes:
+    - Ingress
+    - Egress
+  # Sin reglas = denegar todo
+  # (descomentar para activar, pero primero agrega las políticas de permitir)
+
+---
+# ====================================================
+# Network Policy: Permitir DNS (egress)
+# ====================================================
+# Si usas default-deny, necesitas permitir DNS
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+  namespace: prackube
+spec:
+  podSelector: {}           # Todos los pods
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+        - podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

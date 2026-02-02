@@ -1,0 +1,88 @@
+# ====================================================
+# RESOURCE QUOTA - Límites de recursos por Namespace
+# ====================================================
+# ResourceQuota establece límites agregados de recursos
+# que pueden consumirse en un namespace.
+#
+# Tipos de cuotas:
+# - Compute: CPU, memoria
+# - Storage: Espacio de PVCs
+# - Object count: Número de objetos (pods, services, etc.)
+#
+# Útil para:
+# - Evitar que un equipo consuma todos los recursos
+# - Garantizar recursos para otros namespaces
+# - Control de costos en la nube
+# ====================================================
+
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: prackube-quota
+  namespace: prackube
+spec:
+  hard:
+    # -------- Límites de Compute --------
+    requests.cpu: "4"             # Total de CPU solicitada
+    requests.memory: "4Gi"        # Total de memoria solicitada
+    limits.cpu: "8"               # Total de límites de CPU
+    limits.memory: "8Gi"          # Total de límites de memoria
+    
+    # -------- Límites de Storage --------
+    requests.storage: "10Gi"      # Total de storage solicitado
+    persistentvolumeclaims: "5"   # Número máximo de PVCs
+    
+    # -------- Conteo de Objetos --------
+    pods: "20"                    # Número máximo de pods
+    services: "10"                # Número máximo de services
+    secrets: "10"                 # Número máximo de secrets
+    configmaps: "10"              # Número máximo de configmaps
+    replicationcontrollers: "5"
+    services.loadbalancers: "2"   # LoadBalancers (costosos en cloud)
+    services.nodeports: "5"       # NodePorts
+
+---
+# ====================================================
+# LIMIT RANGE - Valores por defecto y límites por Pod/Container
+# ====================================================
+# LimitRange establece límites por defecto y rangos válidos
+# para recursos a nivel de Pod o Container.
+#
+# Si un pod no especifica límites, se aplican los defaults.
+# Si un pod excede los rangos, es rechazado.
+# ====================================================
+
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: prackube-limits
+  namespace: prackube
+spec:
+  limits:
+    # Límites para contenedores
+    - type: Container
+      default:                    # Límites por defecto
+        cpu: "500m"
+        memory: "256Mi"
+      defaultRequest:             # Requests por defecto
+        cpu: "100m"
+        memory: "64Mi"
+      max:                        # Máximo permitido
+        cpu: "2"
+        memory: "1Gi"
+      min:                        # Mínimo permitido
+        cpu: "50m"
+        memory: "32Mi"
+    
+    # Límites para pods (suma de todos los contenedores)
+    - type: Pod
+      max:
+        cpu: "4"
+        memory: "2Gi"
+    
+    # Límites para PVCs
+    - type: PersistentVolumeClaim
+      max:
+        storage: "5Gi"
+      min:
+        storage: "100Mi"

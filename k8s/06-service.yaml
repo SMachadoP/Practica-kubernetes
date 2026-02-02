@@ -1,0 +1,73 @@
+# ====================================================
+# SERVICE - Backend (ClusterIP)
+# ====================================================
+# Un Service expone una aplicación corriendo en un conjunto de Pods
+# como un servicio de red estable.
+#
+# Tipos de Service:
+# - ClusterIP (default): IP interna del cluster (solo accesible dentro)
+# - NodePort: Expone en un puerto de cada nodo
+# - LoadBalancer: Crea un balanceador de carga externo (cloud)
+# - ExternalName: Mapea a un nombre DNS externo
+#
+# El Service proporciona:
+# - IP estable (los pods tienen IPs dinámicas)
+# - Balanceo de carga entre pods
+# - Descubrimiento de servicio (DNS interno)
+# ====================================================
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service       # Este nombre se usa como DNS interno
+  namespace: prackube         # El frontend usa "backend-service" para conectar
+  labels:
+    app: backend
+spec:
+  # Tipo ClusterIP: solo accesible dentro del cluster
+  type: ClusterIP
+  
+  # Selector: qué pods están detrás de este Service
+  # El tráfico se balancea entre pods que coinciden con estas etiquetas
+  selector:
+    app: backend
+  
+  # Puertos del servicio
+  ports:
+    - name: http
+      protocol: TCP
+      port: 5000            # Puerto del Service (el que usan los clientes)
+      targetPort: 5000      # Puerto del contenedor (al que se reenvía)
+      # También puedes usar el nombre del puerto: targetPort: http
+
+---
+# ====================================================
+# SERVICE - Frontend (NodePort)
+# ====================================================
+# NodePort expone el servicio en un puerto estático de cada nodo
+# Permite acceso desde fuera del cluster
+#
+# Rango de puertos NodePort: 30000-32767
+# ====================================================
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: prackube
+  labels:
+    app: frontend
+spec:
+  # NodePort: accesible desde fuera del cluster
+  type: NodePort
+  
+  selector:
+    app: frontend
+  
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80              # Puerto del Service (interno)
+      targetPort: 80        # Puerto del contenedor
+      nodePort: 30080       # Puerto externo (accesible desde tu máquina)
+                           # Acceder: http://<minikube-ip>:30080

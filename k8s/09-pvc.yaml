@@ -1,0 +1,82 @@
+# ====================================================
+# PERSISTENT VOLUME CLAIM (PVC)
+# ====================================================
+# Un PVC es una solicitud de almacenamiento persistente.
+# Los datos persisten incluso si el pod se elimina o reinicia.
+#
+# Jerarquía de almacenamiento:
+# - PersistentVolume (PV): Recurso de almacenamiento real en el cluster
+# - PersistentVolumeClaim (PVC): Solicitud de un usuario para usar un PV
+# - StorageClass: Define tipos/calidades de almacenamiento disponibles
+#
+# Modos de acceso:
+# - ReadWriteOnce (RWO): Montado lectura/escritura por un solo nodo
+# - ReadOnlyMany (ROX): Montado solo lectura por múltiples nodos
+# - ReadWriteMany (RWX): Montado lectura/escritura por múltiples nodos
+# ====================================================
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: data-pvc
+  namespace: prackube
+  labels:
+    app: prackube
+spec:
+  accessModes:
+    - ReadWriteOnce         # Un nodo puede montar lectura/escritura
+  
+  resources:
+    requests:
+      storage: 1Gi          # Solicitar 1 GB de almacenamiento
+  
+  # StorageClass (opcional en Minikube, usa el default)
+  # storageClassName: standard
+
+---
+# ====================================================
+# Ejemplo: Deployment usando el PVC
+# ====================================================
+# Este es un ejemplo de cómo una aplicación usaría el PVC
+# (Por ejemplo, una base de datos)
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-with-storage
+  namespace: prackube
+  labels:
+    app: storage-example
+spec:
+  replicas: 1               # Solo 1 réplica para RWO
+  selector:
+    matchLabels:
+      app: storage-example
+  template:
+    metadata:
+      labels:
+        app: storage-example
+    spec:
+      containers:
+        - name: alpine
+          image: alpine:latest
+          command: ["sleep", "infinity"]
+          
+          # Montar el volumen en el contenedor
+          volumeMounts:
+            - name: data-volume       # Nombre del volumen (definido abajo)
+              mountPath: /data        # Ruta dentro del contenedor
+          
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "50m"
+            limits:
+              memory: "64Mi"
+              cpu: "100m"
+      
+      # Definir el volumen usando el PVC
+      volumes:
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: data-pvc       # Nombre del PVC creado arriba
