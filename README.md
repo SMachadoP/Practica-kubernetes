@@ -4,6 +4,8 @@ Este repositorio contiene una práctica completa para aprender Kubernetes desde 
 
 ---
 
+Actua como experto en Sistemas distribuidos. Especialmente en kubernetes con minikube. Crea esta practica en la carpeta que tengo en tu entorno scratch. no quiero que me muestres plan de implementacion y pidas aprobacion, quiero que directamente hagas la practica. Ten en cuenta que debe de inicialmente funcionar con docker compose y luego transformar a kubernetes con el Kompose.
+
 ## 📋 Tabla de Contenidos
 
 1. [Descripción del Proyecto](#descripción-del-proyecto)
@@ -1037,3 +1039,11 @@ minikube delete
 - Para producción real, usar un registry de imágenes (DockerHub, ECR, GCR, etc.)
 
 ¡Buena suerte con tu práctica de Kubernetes! 🚀
+
+cd c:\ruta\a\tu\proyecto
+git init
+git add .
+git commit -m "Descripción del proyecto"
+git branch -M main
+git remote add origin https://github.com/USUARIO/REPO.git
+git push -u origin main
