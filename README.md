@@ -1,3 +1,181 @@
+# Sistema de Monitoreo en Tiempo Real - Kubernetes
+
+## Archivos de Configuración
+
+### 1. secret.yaml
+Define la contraseña de Redis para autenticación segura.
+
+### 2. pv.yaml
+PersistentVolume que reserva 1GB de almacenamiento en el nodo de Kubernetes.
+
+### 3. pvc.yaml
+PersistentVolumeClaim que solicita espacio del PV para Redis.
+
+### 4. redis-deployment.yaml
+- Despliega Redis con autenticación obligatoria
+- Monta el volumen persistente en /data
+- Configura la contraseña desde el Secret
+
+### 5. redis-service.yaml
+Service interno (ClusterIP) para que otros pods se conecten a Redis.
+
+### 6. productor-deployment.yaml
+- Usa Python 3 Alpine (ligero)
+- Instala el cliente redis-py
+- Script inline que:
+  - Se conecta a Redis con autenticación
+  - Genera datos aleatorios cada 3 segundos
+  - Formato JSON: `{"sensor_id": "rbt-01", "valor": X, "timestamp": "..."}`
+  - Guarda en lista Redis llamada "sensor_data"
+
+### 7. cliente-deployment.yaml
+- Despliega Redis Commander
+- Se conecta automáticamente a Redis con la contraseña
+
+### 8. cliente-service.yaml
+Service tipo NodePort en puerto 30080 para acceso desde el navegador.
+
+## Comandos para Ejecutar
+
+### 1. Iniciar Minikube
+```bash
+minikube start
+```
+
+### 2. Aplicar todas las configuraciones
+```bash
+kubectl apply -f k8s/secret.yaml
+kubectl apply -f k8s/pv.yaml
+kubectl apply -f k8s/pvc.yaml
+kubectl apply -f k8s/redis-deployment.yaml
+kubectl apply -f k8s/redis-service.yaml
+kubectl apply -f k8s/productor-deployment.yaml
+kubectl apply -f k8s/cliente-deployment.yaml
+kubectl apply -f k8s/cliente-service.yaml
+```
+
+### 3. Verificar que todo esté corriendo
+```bash
+kubectl get pods
+kubectl get pvc
+kubectl get services
+```
+
+### 4. Acceder a la interfaz web
+```bash
+minikube service cliente-service
+```
+**Nota:** Mantén la terminal abierta mientras uses el navegador. Se abrirá automáticamente en `http://127.0.0.1:XXXXX`
+
+## Pruebas de Funcionalidad (Paso a Paso)
+
+### Paso 1: Verificar que todos los pods están corriendo
+```bash
+kubectl get pods
+```
+**Resultado esperado:** Todos los pods (redis, productor, cliente) deben estar en estado `Running` con READY `1/1`
+
+### Paso 2: Verificar que el PersistentVolumeClaim está Bound
+```bash
+kubectl get pvc redis-pvc
+```
+**Resultado esperado:** STATUS debe mostrar `Bound`
+```
+NAME        STATUS   VOLUME     CAPACITY   ACCESS MODES
+redis-pvc   Bound    redis-pv   1Gi        RWO
+```
+
+### Paso 3: Verificar que el productor está generando datos
+```bash
+kubectl logs deployment/productor --tail=10
+```
+**Resultado esperado:** Ver líneas como:
+```
+Dato guardado: {'sensor_id': 'rbt-01', 'valor': 42, 'timestamp': '2026-02-04T...'}
+Dato guardado: {'sensor_id': 'rbt-01', 'valor': 87, 'timestamp': '2026-02-04T...'}
+```
+
+### Paso 4: Visualizar datos en la interfaz web
+1. Ejecutar: `minikube service cliente-service`
+2. Se abrirá Redis Commander en el navegador
+3. En el panel izquierdo, expandir `local (redis-service:6379:0)`
+4. Hacer clic en la clave **`sensor_data`**
+5. **Resultado esperado:** Ver una lista con múltiples JSONs:
+   ```json
+   {"sensor_id": "rbt-01", "valor": 57, "timestamp": "2026-02-04T21:59:10.619422"}
+   {"sensor_id": "rbt-01", "valor": 44, "timestamp": "2026-02-04T21:59:13.632153"}
+   ```
+
+### Paso 5: Tomar evidencia (para el reporte)
+- **Captura 1:** Interfaz web mostrando los datos JSON en `sensor_data`
+- **Captura 2:** Comando `kubectl get pvc` mostrando STATUS `Bound`
+
+## Pruebas de Resiliencia (Recuperación ante fallos)
+
+### Paso 6: Contar cuántos datos hay antes de la prueba
+En Redis Commander, anotar el número de ítems en `sensor_data` (ej: 121 Items)
+
+### Paso 7: Eliminar el pod de Redis
+```bash
+kubectl delete pod -l app=redis
+```
+**Resultado esperado:** El pod se elimina exitosamente
+
+### Paso 8: Verificar que Kubernetes lo recrea automáticamente
+```bash
+kubectl get pods -w
+```
+**Resultado esperado:** En unos segundos verás un nuevo pod de redis en estado `Running`
+```
+redis-XXXXX-XXXXX   0/1   ContainerCreating   0   1s
+redis-XXXXX-XXXXX   1/1   Running             0   5s
+```
+Presiona `Ctrl+C` para salir del watch
+
+### Paso 9: Verificar que los datos persisten
+1. Actualizar la página de Redis Commander (F5)
+2. Hacer clic nuevamente en `sensor_data`
+3. **Resultado esperado:** Los datos anteriores siguen ahí + nuevos datos generados
+4. El contador de ítems debe ser igual o mayor al del Paso 6
+
+### Paso 10: Verificar que el productor sigue funcionando
+```bash
+kubectl logs deployment/productor --tail=5
+```
+**Resultado esperado:** Ver que sigue generando datos nuevos después del reinicio de Redis
+
+### Paso 11: Tomar evidencia de resiliencia (para el reporte)
+- **Captura 3:** Comando `kubectl get pods` mostrando el nuevo pod de redis corriendo
+- **Captura 4:** Redis Commander mostrando que los datos persisten después del reinicio
+
+## Limpieza
+
+Para eliminar todo:
+```bash
+kubectl delete -f k8s/
+minikube stop
+```
+
+## Formato de Datos
+
+Los datos se guardan en Redis como una lista con el siguiente formato JSON:
+
+```json
+{
+  "sensor_id": "rbt-01",
+  "valor": 42,
+  "timestamp": "2026-02-04T10:30:15.123456"
+}
+```
+
+- **sensor_id**: Identificador del robot sensor (rbt-01)
+- **valor**: Número aleatorio entre 1 y 100
+- **timestamp**: Fecha y hora en formato ISO 8601
+
+
+
+
+
 abrir docker desktop
 minikube start
 minikube dashboard
