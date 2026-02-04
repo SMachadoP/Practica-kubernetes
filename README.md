@@ -1,3 +1,68 @@
+abrir docker desktop
+minikube start
+minikube dashboard
+1:
+# Crear el deployment directamente desde la consola
+kubectl create deployment hello-deployment --image=nginxdemos/hello:latest
+# Verificar que el deployment se creó correctamente
+kubectl get deployments
+# Ver el pod en ejecución
+kubectl get pods
+# Ver detalles del deployment
+kubectl describe deployment hello-deployment
+2:
+# Exponer el deployment como servicio ClusterIP 
+kubectl expose deployment hello-deployment --port=80  --type=ClusterIP            opcional para renombrar --name=hello-service
+# Verificar el servicio
+kubectl get services
+# Ver detalles del servicio
+kubectl describe service hello-deployment
+
+# Obtener la IP del servicio
+kubectl get svc hello-deployment
+# Probar desde dentro del clúster usando un pod temporal Este te muestra "la bola de cosas" = el HTML completo
+kubectl run curl-test --image=curlimages/curl -i --rm --restart=Never -- curl http://hello-deployment
+# O ver los endpoints del servicio Este te muestra solo la IP:puerto
+kubectl get endpoints hello-deployment
+
+# OPCIÓN 2: O editar interactivamente (se abre un editor)
+kubectl edit service hello-deployment
+# Cambiar la línea: type: ClusterIP por type: NodePort
+# Guardar y salir
+# Verificar el cambio y ver el puerto asignado
+kubectl get svc hello-deployment
+# Ver detalles completos incluyendo el NodePort
+kubectl describe service hello-deployment
+
+# Si usas minikube
+x minikube ip
+minikube service hello-service --url
+# Probar acceso (reemplaza <NODE_IP> y <NODE_PORT> con tus valores)
+curl http://<NODE_IP>:<NODE_PORT>
+# Abrir en el navegador con minikube
+minikube service hello-service
+3:
+# Escalar a 4 réplicas
+kubectl scale deployment hello-deployment --replicas=4
+# Verificar el escalado inmediatamente
+kubectl get deployment hello-deployment
+# Ver todos los pods creados
+kubectl get pods
+# Observar el proceso de escalado en tiempo real (Ctrl+C para salir)
+kubectl get pods -w
+# Verificar que todas las réplicas están listas
+kubectl rollout status deployment hello-deployment
+# Ver detalles del deployment incluyendo réplicas
+kubectl describe deployment hello-deployment
+4:
+# Actualizar la imagen del deployment a nginx:alpine
+kubectl set image deployment/hello-deployment hello=nginx:alpine
+# Observar el proceso de actualización en tiempo real
+kubectl rollout status deployment hello-deployment
+# Confirmar que los pods están corriendo con la nueva imagen
+kubectl get deployment hello-deployment -o wide
+
+
 # 🚀 Práctica de Kubernetes con Minikube
 
 Este repositorio contiene una práctica completa para aprender Kubernetes desde cero utilizando Minikube. Incluye una aplicación full-stack (backend + frontend) con todos los manifiestos de Kubernetes necesarios.
